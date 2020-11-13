@@ -1,0 +1,41 @@
+# TODO : Build your model here
+class YourModel(nn.Module):
+    def __init__(self, hidden_dim):
+        super(YourModel, self).__init__()
+
+        # Encoder part
+        self.lstm_e1 = nn.LSTM(input_size=128, hidden_size=32, batch_first=True, num_layers=2,)
+        self.fc_e21 = nn.Linear(256*4, hidden_dim)
+        self.fc_e22 = nn.Linear(256*4, hidden_dim)
+
+        # Decoder part
+        self.fc_d4 = nn.Linear(hidden_dim, 256*4)
+        self.conv2d_trans_d5 = nn.ConvTranspose2d(256*4, 256*32)
+        self.conv2d_trans_d6 = nn.ConvTranspose2d(256*32, 256*128)
+
+    def encoder(self, x):
+        h = F.relu(self.conv2d_e1(x))
+        h = F.relu(self.conv2d_e2(h))
+        h = torch.flatten(h)
+        mu = self.fc_e31(h)
+        log_var = self.fc_e32(h)
+        return mu, log_var
+
+    def reparameterize(self, mu, log_var):
+        std = torch.exp(0.5*log_var)
+        eps = torch.randn_like(std)
+        return mu + std * eps # return z sample
+
+    def decoder(self, z):
+        h = F.relu(self.fc_d4(z))
+        h = F.relu(self.conv2d_trans_d5(h))
+        h = F.relu(self.conv2d_trans_d6(h))
+        h = torch.sigmoid(self.fc6(h))
+        return h
+
+    def forward(self, x):
+        x = x.view(-1, 256*128)
+        mu, log_var = self.encoder(x)
+        z = self.reparameterize(mu, log_var)
+        recon_x = self.decoder(z)
+        return recon_x, mu, log_var
